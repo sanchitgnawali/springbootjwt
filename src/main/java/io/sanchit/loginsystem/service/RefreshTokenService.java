@@ -43,7 +43,7 @@ public class RefreshTokenService {
     throw new RuntimeException("Refresh token invalid");
   }
 
-  private void revokeRefreshToken(RefreshToken refreshToken) {
+  public void revokeRefreshToken(RefreshToken refreshToken) {
     refreshToken.setRevoked(true);
     refreshTokenRepository.save(refreshToken);
   }

@@ -11,16 +11,17 @@ import io.sanchit.loginsystem.mapper.UserRequestToUserEntityMapper;
 import io.sanchit.loginsystem.service.JWTService;
 import io.sanchit.loginsystem.service.RefreshTokenService;
 import io.sanchit.loginsystem.service.UserService;
+import jakarta.servlet.http.Cookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,7 +58,7 @@ public class UserController {
   }
 
   @PostMapping("login")
-  public JwtResponse login(@RequestBody UserRequest userRequest) {
+  public ResponseEntity<JwtResponse> login(@RequestBody UserRequest userRequest) {
 
     Authentication authentication =
         authenticationManager.authenticate(
@@ -70,7 +71,17 @@ public class UserController {
       String refreshToken =
           refreshTokenService.generateRefreshToken(userRequest.getUsername()).getToken();
 
-      return new JwtResponse(accessToken, refreshToken);
+      ResponseCookie responseCookie =
+          ResponseCookie.from("refresh-token", refreshToken)
+              .httpOnly(true)
+              .path("/")
+              .maxAge(Duration.ofDays(7))
+              .sameSite("Strict")
+              .build();
+
+      return ResponseEntity.ok()
+          .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
+          .body(new JwtResponse(accessToken));
     }
 
     throw new UsernameNotFoundException("Invalid username or password");
@@ -86,18 +97,31 @@ public class UserController {
   }
 
   @PostMapping("refreshToken")
-  public JwtResponse refreshToken(@RequestBody RefreshTokenRequest refreshTokenRequest) {
+  public ResponseEntity<JwtResponse> refreshToken(@CookieValue("refresh-token") String token) {
 
     RefreshToken refreshToken =
         refreshTokenService
-            .findByToken(refreshTokenRequest.getRefreshToken())
+            .findByToken(token)
             .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
     if (refreshTokenService.isRefreshTokenValid(refreshToken)) {
-      return JwtResponse.builder()
-          .accessToken(jwtService.generateToken(refreshToken.getUser().getUsername()))
-          .refreshToken(refreshTokenRequest.getRefreshToken())
-          .build();
+
+      refreshTokenService.revokeRefreshToken(refreshToken);
+
+      RefreshToken newRefreshToken =
+          refreshTokenService.generateRefreshToken(refreshToken.getUser().getUsername());
+
+      ResponseCookie cookie =
+          ResponseCookie.from("refresh-token", newRefreshToken.getToken())
+              .httpOnly(true)
+              .path("/")
+              .maxAge(Duration.ofDays(7))
+              .sameSite("Strict")
+              .build();
+
+      return ResponseEntity.ok()
+          .header(HttpHeaders.SET_COOKIE, cookie.toString())
+          .body(new JwtResponse(jwtService.generateToken(refreshToken.getUser().getUsername())));
     }
 
     throw new RuntimeException("Please login.");
