@@ -62,11 +62,5 @@ public class UserService {
     } catch (AuthenticationException e) {
       throw new BadCredentialsException("Invalid username or password");
     }
-
-    //    if (authentication.isAuthenticated()) {
-    //      return jwtService.generateToken(userEntity.getUsername());
-    //    }
-
-    //    return "fail";
   }
 }

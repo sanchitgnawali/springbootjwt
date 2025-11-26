@@ -52,7 +52,6 @@ public class JWTFilter extends OncePerRequestFilter {
           }
         }
 
-        //        filterChain.doFilter(request, response);
       } catch (JwtException | IllegalArgumentException e) {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       }
