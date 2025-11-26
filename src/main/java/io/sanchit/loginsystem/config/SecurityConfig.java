@@ -26,7 +26,7 @@ public class SecurityConfig {
 
   public SecurityConfig(UserDetailsServiceImpl userDetailsService, JWTFilter jwtFilter) {
     this.userDetailsService = userDetailsService;
-      this.jwtFilter = jwtFilter;
+    this.jwtFilter = jwtFilter;
   }
 
   @Bean
@@ -34,7 +34,7 @@ public class SecurityConfig {
     return http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/register", "/login")
+                auth.requestMatchers("/register", "/login", "/refreshToken")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

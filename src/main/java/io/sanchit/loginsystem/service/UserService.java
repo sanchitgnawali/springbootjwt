@@ -3,11 +3,6 @@ package io.sanchit.loginsystem.service;
 import io.sanchit.loginsystem.entity.UserEntity;
 import io.sanchit.loginsystem.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -51,16 +46,6 @@ public class UserService {
   }
 
   public String verifyLogin(UserEntity userEntity) {
-    try {
-
-      Authentication authentication =
-          authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(
-                  userEntity.getUsername(), userEntity.getPassword()));
-
-      return jwtService.generateToken(userEntity.getUsername());
-    } catch (AuthenticationException e) {
-      throw new BadCredentialsException("Invalid username or password");
-    }
+    return jwtService.generateToken(userEntity.getUsername());
   }
 }
